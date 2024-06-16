@@ -2,6 +2,14 @@ var fromIdx;
 var toIdx;
 window.addEventListener("load",function(){
     addDragEvent();
+    document.querySelector("#editFormMask").addEventListener("click",function(e){
+        if(e.target.id === "editFormMask"){
+            closeEditForm();
+        }
+    })
+    document.querySelector("#editForm").addEventListener("click",function(e){
+        e.stopPropagation();
+    })
 });
 
 /**
@@ -46,17 +54,30 @@ var dragEnd = function(){
     });
     if(fromIdx < toIdx){
         for(i = fromIdx; i < toIdx; i++){
-            ss(i,i+1);
+            sortList(i,i+1);
         }
     }else{
         for(i = fromIdx; i > toIdx; i--){
-            ss(i,i-1);
+            sortList(i,i-1);
         }
     }
     app.rerender();
 }
+
 /**
- *  
+ * bookmarkListの並び変え
+ * @param {int} idx1 
+ * @param {int} idx2 
+ */
+var sortList = function(idx1,idx2){
+    var map1 = app.bookmarkList[idx1];
+    var map2 = app.bookmarkList[idx2];
+    app.bookmarkList.splice(idx1,1,map2);
+    app.bookmarkList.splice(idx2,1,map1);
+}
+
+/**
+ *  ドラッグエンターイベント
  */
 var dragEnter = function(){
     var fromId = "tr_"+fromIdx;
@@ -82,22 +103,27 @@ var dragEnter = function(){
 
 };
 
-var ss = function(idx1,idx2){
-    var map1 = app.bookmarkList[idx1];
-    var map2 = app.bookmarkList[idx2];
-    app.bookmarkList.splice(idx1,1,map2);
-    app.bookmarkList.splice(idx2,1,map1);
-}
-
+/**
+ * ドラッグオーバーイベント
+ * @param {event} e
+ */
 var dragOver = function(e){
     e.preventDefault()
 }
 
+/**
+ * ドロップイベント
+ * @param {event} e
+ */
 var dragDrop = function(e){
-
     e.preventDefault()
 };
 
+/**
+ * JSON形式からBookmarkListを作成する。
+ * @param {array} list 
+ * @param {array} json 
+ */
 const createList = function(list,json){
     let length = list.length
     for(i=0; i<length; i++){
@@ -112,6 +138,16 @@ const createList = function(list,json){
 }
 
 
+/**
+ * 編集フォームを閉じる
+ */
+ const closeEditForm = function(){
+    document.getElementById("editFormMask").classList.add("none");
+}
+
+/**
+ * Vueインスタンス
+ */
 var app = new Vue({
     el: "#app",
     data:{
@@ -140,6 +176,9 @@ var app = new Vue({
         remove: function(index){
             this.bookmarkList.splice(index,1);
         },
+        /**
+         * ブックマークをjsonファイルでエクスポートする。
+         */
         exportBookmarks: function(){
             var length = this.bookmarkList.length;
             var json = [];
@@ -160,7 +199,9 @@ var app = new Vue({
             link.click();
             document.body.removeChild(link);
         },
-        //インポート
+        /**
+         * ブックマークをjsonファイルでインポートする。
+         */
         importBookmarks:function(e){
             var file = e.currentTarget.files[0];
             var bookmarkList = this.bookmarkList;
@@ -179,6 +220,38 @@ var app = new Vue({
                 reader.readAsText(file);
             }
         },
+        /**
+         * 編集フォームを表示する。
+         */
+        openEdit:function(idx,title,url){
+            let editForm = document.querySelector("#editFormMask");
+            let editIdx = document.getElementById("editIdx");
+            let editTitle = document.getElementById("editTitle");
+            let editUrl = document.getElementById("editUrl");
+            editForm.classList.remove("none");
+            editIdx.value = idx;
+            editTitle.value = title;
+            editUrl.value = url;
+            
+        },
+        /**
+         * 編集フォームを閉じる
+         */
+        closeEditForm:function(){
+            closeEditForm();
+        },
+        updateBookmark:function(){
+            let editIdx = document.getElementById("editIdx").value;
+            let editTitle = document.getElementById("editTitle").value;
+            let editUrl = document.getElementById("editUrl").value;
+            this.bookmarkList[editIdx].title = editTitle;
+            this.bookmarkList[editIdx].url = editUrl;
+            closeEditForm();
+            this.rerender();
+        },
+        /**
+         * 再描画
+         */
         rerender:function(){
             this.componentKey += 1;
         }
